@@ -14,7 +14,7 @@ func CreateTileFloor(spriteName string) TileFloor {
 	return TileFloor{spriteName}
 }
 
-func (tf TileFloor) Tick(tick int)  {
+func (tf TileFloor) Tick(tick int) {
 	return
 }
 

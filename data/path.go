@@ -1,9 +1,9 @@
 package data
 
 import (
+	"log"
 	"os"
 	"path/filepath"
-	"log"
 )
 
 func GetDataDir() string {
