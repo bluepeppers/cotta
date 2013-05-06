@@ -1,60 +1,36 @@
 package game
 
-import "allegro"
+import (
+	"github.com/bluepeppers/allegro"
+
+	"github.com/bluepeppers/danckelmann/resources"
+)
 
 type Tile struct {
 	occupier *Entity
-	floor    Floor
-
-	cp *Tile
+	floor    Entity
 }
 
 type Entity interface {
 	Ticker
-	GetCharacter() string
-	GetFGColor() allegro.Color
 
-	Copy() *Entity
+	GetSprites(*resources.ResourceManager) []*allegro.Bitmap
 }
 
-func CreateTile(occupier *Entity, floor Floor) Tile {
-	return Tile{occupier, floor, nil}
+func CreateTile(occupier *Entity, floor Entity) Tile {
+	return Tile{occupier, floor}
 }
 
-func (t *Tile) Copy() *Tile {
-	if t.cp != nil {
-		return t.cp
-	}
-
-	dest := new(Tile)
-	t.cp = dest
+func (t *Tile) Tick(tick int) {
 	if t.occupier != nil {
-		dest.occupier = (*t.occupier).Copy()
+		go (*t.occupier).Tick(tick)
 	}
-	dest.floor = t.floor.Copy()
-	return dest
 }
 
-func (t *Tile) GetCharacter() string {
+func (t *Tile) GetSprites(rm *resources.ResourceManager) []*allegro.Bitmap {
+	sprites := t.floor.GetSprites(rm)
 	if t.occupier != nil {
-		return (*t.occupier).GetCharacter()
+		sprites = append(sprites, (*t.occupier).GetSprites(rm)...)
 	}
-	return t.floor.GetCharacter()
-}
-
-func (t *Tile) GetFGColor() allegro.Color {
-	if t.occupier != nil {
-		return (*t.occupier).GetFGColor()
-	}
-	return t.floor.GetFGColor()
-}
-
-func (t *Tile) GetBGColor() allegro.Color {
-	return t.floor.GetBGColor()
-}
-
-func (t *Tile) Tick(g *GameState) {
-	if t.occupier != nil {
-		go (*t.occupier).Tick(g)
-	}
+	return sprites
 }

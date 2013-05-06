@@ -1,25 +1,29 @@
 package game
 
-import "allegro"
+import (
+	"github.com/bluepeppers/allegro"
 
-import "github.com/bluepeppers/cotta/config"
+	"github.com/bluepeppers/danckelmann/config"
+	"github.com/bluepeppers/danckelmann/display"
+	"github.com/bluepeppers/danckelmann/resources"
+)
 
 const (
 	LAG_THREASHHOLD = 0.5
-	MAXIMUM_SPEED   = 1 / 60.
+	DEFAULT_TICKRATE = 60
+	DEFAULT_TILE_WIDTH = 32
+	DEFAULT_TILE_HEIGHT = 32
 )
 
-type Game struct {
-	ticks   *allegro.Timer
-	mutator *Mutator
-}
-
-type GameState struct {
+type GameEngine struct {
+	displayEngine *display.DisplayEngine
+	displayConfig display.DisplayConfig
+	resourceManager *resources.ResourceManager
+	
 	world   *WorldMap
 	stopped bool
 	stats   Stats
-
-	cp *GameState
+	tickRate int
 }
 
 type Stats struct {
@@ -27,120 +31,50 @@ type Stats struct {
 	actionN int
 }
 
-type WorldMap struct {
-	tiles [][]Tile
-
-	cp *WorldMap
-}
-
 type Ticker interface {
-	Tick(*GameState)
+	Tick(int)
 }
 
-func CreateGame(conf *allegro.Config) *Game {
-	g := new(Game)
-	tickRate := config.GetInt(conf, "map", "tickRate", 30)
-	g.ticks = allegro.CreateTimer(1 / float64(tickRate))
+func CreateGameEngine(conf *allegro.Config) *GameEngine {
+	ge := new(GameEngine)
+	ge.stopped = false
+	ge.world = CreateWorldMap(conf)
+	ge.tickRate = config.GetInt(conf, "game", "tickrate", DEFAULT_TICKRATE)
 
-	state := CreateGameState(conf)
-	g.mutator = CreateMutator(state)
-	return g
+	tileWidth := config.GetInt(conf, "game", "tileWidth", DEFAULT_TILE_WIDTH)
+	tileHeight := config.GetInt(conf, "game", "tileHeight", DEFAULT_TILE_HEIGHT)
+	
+	ge.displayConfig = display.DisplayConfig{
+		ge.world.width, ge.world.height,
+		tileWidth, tileHeight,
+		allegro.CreateColorHTML("black") }
+	return ge
 }
 
-func CreateGameState(conf *allegro.Config) *GameState {
-	st := new(GameState)
-	st.stopped = false
-	st.world = CreateWorldMap(conf)
-	return st
+func (ge *GameEngine) RegisterDisplayEngine(de *display.DisplayEngine) {
+	ge.displayEngine = de
+	ge.resourceManager = de.GetResourceManager()
 }
 
-func (g *GameState) Copy() *GameState {
-	if g.cp != nil {
-		return g.cp
-	}
-	dest := new(GameState)
-	g.cp = dest
-	dest.world = g.world.Copy()
-	dest.stopped = g.stopped
-	dest.stats = g.stats
-	return dest
+func (ge *GameEngine) GetDisplayConfig() display.DisplayConfig {
+	return ge.displayConfig
 }
 
-func CreateWorldMap(conf *allegro.Config) *WorldMap {
-	width := config.GetInt(conf, "map", "width", 100)
-	height := config.GetInt(conf, "map", "height", 100)
-	tiles := make([][]Tile, width)
-	for x := 0; x < width; x++ {
-		tiles[x] = make([]Tile, height)
-		for y := 0; y < height; y++ {
-			var f ColorFloor
-			tiles[x][y] = CreateTile(nil, f)
-		}
-	}
-	return &WorldMap{tiles: tiles}
-}
-
-func (wm *WorldMap) Copy() *WorldMap {
-	if wm.cp != nil {
-		return wm.cp
-	}
-	dest := new(WorldMap)
-	wm.cp = dest
-
-	dest.tiles = make([][]Tile, len(wm.tiles))
-	for i, r := range wm.tiles {
-		dest.tiles[i] = make([]Tile, len(r))
-		for j, t := range r {
-			dest.tiles[i][j] = *(t.Copy())
-		}
-	}
-	return dest
-}
-
-func (g *Game) MainLoop() {
-	g.mutator.Start()
-	defer g.mutator.Stop()
-
-	es := []*allegro.EventSource{g.ticks.GetEventSource()}
+func (ge *GameEngine) MainLoop() {
+	timer := allegro.CreateTimer(1/float64(ge.tickRate))
+	es := []*allegro.EventSource{timer.GetEventSource()}
 	queue := allegro.GetEvents(es)
 	stopped := false
+	tick := 0
 	for !stopped {
-		g.mutator.stateLock.RLock()
-		stopped = g.mutator.lastState.stopped
-		g.mutator.stateLock.RUnlock()
-
 		ev := <-queue
 		if _, ok := ev.(allegro.TimerEvent); ok {
-			g.mutator.Tick()
+			ge.world.Tick(tick)
 		}
+		tick++
 	}
 }
 
-/*
-// Returns true if a speed change should be done
-func (g *GameState) CheckSpeedChange(ev allegro.TimerEvent) bool {
-	diff := g.ticks.GetCount() - int64(ev.Count)
-	threshhold := LAG_THREASHHOLD / g.ticks.GetSpeed()
-
-	return diff > int64(threshhold)
-}
-
-func (g *GameState) ChangeSpeed(ev allegro.TimerEvent) {
-	ns := g.ticks.GetSpeed() * 1.1
-
-	g.ticks.SetSpeed(ns)
-}
-*/
-
-func (g *GameState) Tick() {
-	g.stats.tickN++
-	g.world.Tick(g)
-}
-
-func (w *WorldMap) Tick(g *GameState) {
-	for x := 0; x < len(w.tiles); x++ {
-		for y := 0; y < len(w.tiles[x]); y++ {
-			go w.tiles[x][y].Tick(g)
-		}
-	}
+func (ge *GameEngine) GetTile(x, y int) []*allegro.Bitmap {
+	return ge.world.tiles[x * ge.displayConfig.MapW + y].GetSprites(ge.resourceManager)
 }

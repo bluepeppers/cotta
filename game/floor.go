@@ -3,30 +3,21 @@ package game
 import (
 	"github.com/bluepeppers/allegro"
 
-	"github.com/bluepeppers/cotta/display"
+	"github.com/bluepeppers/danckelmann/resources"
 )
 
-type Floor interface {
-	display.Drawable
-	Copy() Floor
+type TileFloor struct {
+	spriteName string
 }
 
-type ColorFloor struct {
-	Color allegro.Color
+func CreateTileFloor(spriteName string) TileFloor {
+	return TileFloor{spriteName}
 }
 
-func (cf ColorFloor) GetCharacter() string {
-	return "."
+func (tf TileFloor) Tick(tick int)  {
+	return
 }
 
-func (cf ColorFloor) GetBGColor() allegro.Color {
-	return cf.Color
-}
-
-func (cf ColorFloor) GetFGColor() allegro.Color {
-	return cf.Color
-}
-
-func (cf ColorFloor) Copy() Floor {
-	return Floor(ColorFloor{cf.Color})
+func (tf TileFloor) GetSprites(rm *resources.ResourceManager) []*allegro.Bitmap {
+	return []*allegro.Bitmap{rm.GetTileOrDefault(tf.spriteName)}
 }
