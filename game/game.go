@@ -76,6 +76,8 @@ func (ge *GameEngine) MainLoop() {
 	queue := allegro.GetEvents(es)
 	stopped := false
 
+	go ge.eventHandler()
+
 	ge.statusLock.Lock()
 	ge.stopped = false
 	ge.statusLock.Unlock()
@@ -94,5 +96,5 @@ func (ge *GameEngine) MainLoop() {
 }
 
 func (ge *GameEngine) GetTile(x, y int) []*allegro.Bitmap {
-	return ge.world.tiles[x*ge.displayConfig.MapW+y].GetSprites(ge.resourceManager)
+	return ge.world.tiles[x][y].GetSprites(ge.resourceManager)
 }
