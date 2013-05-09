@@ -39,12 +39,6 @@ func CreateWorldMap(conf *allegro.Config) *WorldMap {
 	}
 
 	wm.roadNetwork = roads.CreateRoadNetwork(&wm)
-	wm.roadNetwork.AddRoad(3, 3)
-	wm.roadNetwork.AddRoad(4, 3)
-	wm.roadNetwork.AddRoad(4, 4)
-	wm.roadNetwork.AddRoad(4, 5)
-	wm.roadNetwork.AddRoad(4, 6)
-	wm.roadNetwork.AddRoad(5, 5)
 
 	return &wm
 }

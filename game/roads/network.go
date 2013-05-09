@@ -32,13 +32,17 @@ func CreateRoadNetwork(wm WorldMap) *RoadNetwork {
 }
 
 func (rn *RoadNetwork) AddRoad(x, y int) bool {
+	w, h := rn.worldMap.GetDimensions()
+	if !(0 <= x && x < w) ||
+		!(0 <= y && y < h) {
+		return false
+	}
 	currentTile := rn.worldMap.GetTile(x, y)
 	_, empty := currentTile.(*tile.EmptyTile)
 	if !empty {
 		return false
 	}
 
-	w, h := rn.worldMap.GetDimensions()
 	rx := x + w
 	ry := y + w
 	var adjacent byte

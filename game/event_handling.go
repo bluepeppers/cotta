@@ -43,14 +43,16 @@ func (g *GameEngine) handleKeyChar(ev allegro.KeyCharEvent) {
 		y = SCROLL_SPEED
 	}
 	viewport := g.displayEngine.GetViewport()
-	viewport.X += x
-	viewport.Y += y
+	viewport.Move(x, y)
 	g.displayEngine.SetViewport(viewport)
 }
 
 func (g *GameEngine) handleMouseDown(event allegro.MouseButtonDown) {
 	if event.Button == 3 {
 		go g.startScrolling(event)
+	}
+	if event.Button == 1 {
+		go g.addRoad(event)
 	}
 }
 
@@ -73,8 +75,7 @@ func (g *GameEngine) startScrolling(start allegro.MouseButtonDown) {
 			}
 		case allegro.TimerEvent:
 			viewport := g.displayEngine.GetViewport()
-			viewport.X += (x - start.X) / 30
-			viewport.Y += (y - start.Y) / 30
+			viewport.Move((x - start.X) / 30, (y - start.Y) / 30)
 			g.displayEngine.SetViewport(viewport)
 		case allegro.MouseAxesEvent:
 			x, y = tev.X, tev.Y
@@ -86,4 +87,9 @@ func (g *GameEngine) startScrolling(start allegro.MouseButtonDown) {
 			break
 		}
 	}
+}
+
+func (g *GameEngine) addRoad(event allegro.MouseButtonDown) {
+	x, y := g.displayEngine.GetViewport().ScreenCoordinatesToTile(event.X, event.Y, g.displayConfig)
+	g.world.roadNetwork.AddRoad(int(x), int(y))
 }
