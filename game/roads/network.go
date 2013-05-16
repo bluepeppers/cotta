@@ -2,7 +2,7 @@ package roads
 
 import (
 	"github.com/bluepeppers/cotta/game/tile"
-	)
+)
 
 type WorldMap interface {
 	SetTile(int, int, tile.Tile)
@@ -13,6 +13,8 @@ type WorldMap interface {
 type RoadNetwork struct {
 	worldMap WorldMap
 
+	modifiers chan func(*RoadNetwork)
+	
 	network [][]*RoadTile
 }
 
@@ -27,43 +29,57 @@ func CreateRoadNetwork(wm WorldMap) *RoadNetwork {
 		network.network[x] = networkParent[:w]
 		networkParent = networkParent[w:]
 	}
+	network.modifiers = make(chan func(*RoadNetwork))
+	go network.runModifier()
 	
 	return &network
 }
 
-func (rn *RoadNetwork) AddRoad(x, y int) bool {
-	w, h := rn.worldMap.GetDimensions()
-	if !(0 <= x && x < w) ||
-		!(0 <= y && y < h) {
-		return false
+func (rn *RoadNetwork) runModifier() {
+	for mod := range rn.modifiers {
+		mod(rn)
 	}
-	currentTile := rn.worldMap.GetTile(x, y)
-	_, empty := currentTile.(*tile.EmptyTile)
-	if !empty {
-		return false
-	}
+}
 
-	rx := x + w
-	ry := y + w
-	var adjacent byte
-	if rn.network[x][(ry+1)%h] != nil {
-		adjacent = adjacent | SOUTH
-		rn.network[x][(ry+1)%h].RoadAdjacent(NORTH)
+func (rn_ *RoadNetwork) AddRoad(x, y int) bool {
+	retVal := false
+	rn_.modifiers <- func (rn *RoadNetwork) {
+		w, h := rn.worldMap.GetDimensions()
+		if !(0 <= x && x < w) ||
+			!(0 <= y && y < h) {
+			return
+		}
+		currentTile := rn.worldMap.GetTile(x, y)
+		_, empty := currentTile.(*tile.EmptyTile)
+		if !empty {
+			return
+		}
+
+		rx := x + w
+		ry := y + w
+		var adjacent byte
+
+		if rn.network[x][(ry+1)%h] != nil {
+			adjacent = adjacent | SOUTH
+			rn.network[x][(ry+1)%h].RoadAdjacent(NORTH)
+		}
+		if rn.network[x][(ry-1)%h] != nil {
+			adjacent = adjacent | NORTH
+			rn.network[x][(ry-1)%h].RoadAdjacent(SOUTH)
+		}
+		if rn.network[(rx+1)%w][y] != nil {
+			adjacent = adjacent | WEST
+			rn.network[(rx+1)%w][y].RoadAdjacent(EAST)
+		}
+		if rn.network[(rx-1)%w][y] != nil {
+			adjacent = adjacent | EAST
+			rn.network[(rx-1)%w][y].RoadAdjacent(WEST)
+		}
+		newTile := CreateRoadTile(rn, adjacent)
+		rn.worldMap.SetTile(x, y, newTile)
+		rn.network[x][y] = newTile
+		
+		retVal = true
 	}
-	if rn.network[x][(ry-1)%h] != nil {
-		adjacent = adjacent | NORTH
-		rn.network[x][(ry-1)%h].RoadAdjacent(SOUTH)
-	}
-	if rn.network[(rx+1)%w][y] != nil {
-		adjacent = adjacent | WEST
-		rn.network[(rx+1)%w][y].RoadAdjacent(EAST)
-	}
-	if rn.network[(rx-1)%w][y] != nil {
-		adjacent = adjacent | EAST
-		rn.network[(rx-1)%w][y].RoadAdjacent(WEST)
-	}
-	newTile := CreateRoadTile(rn, adjacent)
-	rn.worldMap.SetTile(x, y, newTile)
-	rn.network[x][y] = newTile
-	return true
+	return retVal
 }
