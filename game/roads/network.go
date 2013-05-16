@@ -5,8 +5,8 @@ import (
 )
 
 type WorldMap interface {
-	SetTile(int, int, tile.Tile)
-	GetTile(int, int) tile.Tile
+	SetTile(int, int, tile.Tile) bool
+	GetTile(int, int) (tile.Tile, bool)
 	GetDimensions() (int, int)
 }
 
@@ -49,7 +49,10 @@ func (rn_ *RoadNetwork) AddRoad(x, y int) bool {
 			!(0 <= y && y < h) {
 			return
 		}
-		currentTile := rn.worldMap.GetTile(x, y)
+		currentTile, ok := rn.worldMap.GetTile(x, y)
+		if !ok {
+			return
+		}
 		_, empty := currentTile.(*tile.EmptyTile)
 		if !empty {
 			return
@@ -76,10 +79,10 @@ func (rn_ *RoadNetwork) AddRoad(x, y int) bool {
 			rn.network[(rx-1)%w][y].RoadAdjacent(WEST)
 		}
 		newTile := CreateRoadTile(rn, adjacent)
-		rn.worldMap.SetTile(x, y, newTile)
-		rn.network[x][y] = newTile
-		
-		retVal = true
+		retVal = rn.worldMap.SetTile(x, y, newTile)
+		if retVal {
+			rn.network[x][y] = newTile
+		}
 	}
 	return retVal
 }

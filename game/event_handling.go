@@ -2,6 +2,8 @@ package game
 
 import (
 	"github.com/bluepeppers/allegro"
+
+	"github.com/bluepeppers/cotta/game/tile"
 )
 
 const (
@@ -48,10 +50,12 @@ func (g *GameEngine) handleKeyChar(ev allegro.KeyCharEvent) {
 }
 
 func (g *GameEngine) handleMouseDown(event allegro.MouseButtonDown) {
-	if event.Button == 3 {
+	switch event.Button {
+	case 3:
 		go g.startScrolling(event)
-	}
-	if event.Button == 1 {
+	case 2:
+		go g.addBuilding(event)
+	case 1:
 		go g.addRoad(event)
 	}
 }
@@ -92,4 +96,15 @@ func (g *GameEngine) startScrolling(start allegro.MouseButtonDown) {
 func (g *GameEngine) addRoad(event allegro.MouseButtonDown) {
 	x, y := g.displayEngine.GetViewport().ScreenCoordinatesToTile(event.X, event.Y, g.displayConfig)
 	g.world.roadNetwork.AddRoad(int(x), int(y))
+}
+
+func (g *GameEngine) addBuilding(event allegro.MouseButtonDown) {
+	x, y := g.displayEngine.GetViewport().ScreenCoordinatesToTile(event.X, event.Y, g.displayConfig)
+	current, ok := g.world.GetTile(int(x), int(y))
+	if !ok {
+		return
+	}
+	if _, ok = current.(*tile.EmptyTile); ok {
+		g.world.SetTile(int(x), int(y), &TileFloor{"buildings.building1"})
+	}
 }

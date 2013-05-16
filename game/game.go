@@ -95,6 +95,6 @@ func (ge *GameEngine) MainLoop() {
 	}
 }
 
-func (ge *GameEngine) GetTile(x, y int) []*allegro.Bitmap {
+func (ge *GameEngine) GetTile(x, y int) []*resources.Bitmap {
 	return ge.world.tiles[x][y].GetSprites(ge.resourceManager)
 }

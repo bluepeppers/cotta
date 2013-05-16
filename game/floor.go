@@ -1,9 +1,8 @@
 package game
 
 import (
-	"github.com/bluepeppers/allegro"
-
 	"github.com/bluepeppers/danckelmann/resources"
+	"github.com/bluepeppers/cotta/game/walker"
 )
 
 type TileFloor struct {
@@ -18,6 +17,8 @@ func (tf TileFloor) Tick(tick int) {
 	return
 }
 
-func (tf TileFloor) GetSprites(rm *resources.ResourceManager) []*allegro.Bitmap {
-	return []*allegro.Bitmap{rm.GetTileOrDefault(tf.spriteName)}
+func (tf TileFloor) GetSprites(rm *resources.ResourceManager) []*resources.Bitmap {
+	return []*resources.Bitmap{rm.GetTileOrDefault(tf.spriteName)}
 }
+
+func (tf TileFloor) AdjacentWalker(w walker.Walker) {}

@@ -3,8 +3,6 @@ package roads
 import (
 	"sync"
 	
-	"github.com/bluepeppers/allegro"
-
 	"github.com/bluepeppers/danckelmann/resources"
 
 	"github.com/bluepeppers/cotta/game/walker"
@@ -62,11 +60,11 @@ func CreateRoadTile(rn *RoadNetwork, adjacent byte) *RoadTile {
 	return &tile
 }
 
-func (rt *RoadTile) GetSprites(rm *resources.ResourceManager) []*allegro.Bitmap {
+func (rt *RoadTile) GetSprites(rm *resources.ResourceManager) []*resources.Bitmap {
 	rt.adjLock.RLock()
 	floorBmp := rm.GetTileOrDefault(rt.floorName)
 	rt.adjLock.RUnlock()
-	return []*allegro.Bitmap{floorBmp}
+	return []*resources.Bitmap{floorBmp}
 }
 
 func (rt *RoadTile) RoadAdjacent(direction byte) {

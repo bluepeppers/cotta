@@ -1,7 +1,6 @@
 package game
 
 import (
-	"log"
 	"sync"
 	
 	"github.com/bluepeppers/allegro"
@@ -51,22 +50,23 @@ func (wm *WorldMap) Tick(tick int) {
 	}
 }
 
-func (wm *WorldMap) SetTile(x, y int, tile tile.Tile) {
+func (wm *WorldMap) SetTile(x, y int, tile tile.Tile) bool {
 	if x < 0 || x >= wm.width || y < 0 || y >= wm.height {
-		log.Panicf("Tried to set tile out of bounds: (%v, %v)", x, y)
+		return false
 	}
 	wm.tileLock.Lock()
 	wm.tiles[x][y] = tile
 	wm.tileLock.Unlock()
+	return true
 }
 
-func (wm *WorldMap) GetTile(x, y int) tile.Tile {
+func (wm *WorldMap) GetTile(x, y int) (tile.Tile, bool) {
 	if x < 0 || x >= wm.width || y < 0 || y >= wm.height {
-		log.Panicf("Tried to get tile out of bounds: (%v, %v)", x, y)
+		return nil, false
 	}
 	wm.tileLock.RLock()
 	defer wm.tileLock.RUnlock()
-	return wm.tiles[x][y]
+	return wm.tiles[x][y], true
 }
 
 func (wm *WorldMap) GetDimensions() (int, int) {
